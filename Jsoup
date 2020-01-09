@@ -1,0 +1,71 @@
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class GSL {
+
+    class Player{
+        String race;
+        String name;
+
+        public Player(String race, String name) {
+            this.race = race;
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name +" -> " + race;
+        }
+    }
+Map<String, Integer> raceStats = new HashMap<String, Integer>();
+    List<Player> players = new ArrayList<Player>();
+
+    private void updateRaceStats(String race){
+        Integer num = raceStats.get(race);
+        if(num == null){
+            raceStats.put(race, 1);
+        }
+        else{
+            raceStats.put(race, 1 + num);
+        }
+    }
+
+    public void load(){
+        String url = "https://liquipedia.net/starcraft2/Global_StarCraft_II_League/Code_S_Streaks";
+        Document doc;
+        try {
+            doc = Jsoup.connect(url).get();
+            Element table = doc.select("table.wikitable").first();
+            Elements rows = table.select("tr");
+            for (Element row : rows) {
+                Elements tds = row.select("td");
+                if(tds.size() < 2){
+                    continue;       // probably header row, ignore
+                }
+                Element td = tds.get(1);   // get second column
+                Elements links = td.select("a");
+                String race = links.get(0).attr("title");  // first link is race icon
+                String name = links.get(1).attr("title");  // second link is player
+                players.add(new Player(race, name));
+                updateRaceStats(race);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+public static void main(String[] args) {
+        GSL gsl = new GSL();
+        gsl.load();
+        for(Player p : gsl.players){
+            System.out.println(p);
+        }
+        System.out.println(gsl.raceStats);
+    }
+}
